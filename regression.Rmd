@@ -1,0 +1,81 @@
+---
+title: "Motor Trend"
+author: "Thong B. Tran"
+output: 
+  html_document:
+    toc: true
+    toc_float: true
+    theme: lumen
+    highlight: textmate
+---
+
+# Question of Interest
+Cars that have automatic transmission tend to consume more gasoline per mile than normal cars.
+In this report, we will examine this trend by using linear regression models.
+
+# Strategy to Select Model 
+We will build several models based, regressing on various set of independent variables to analyze their relationship (whether the slope of am is positive or negative, and how big it is), and those with high p-value and r-squared will be selected.
+```{r echo=FALSE}
+library(ggplot2)
+library(gridExtra)
+data(mtcars)
+mtcars$am <- ifelse(mtcars$am==0,"automatic","manual")
+mtcars$gear <- as.factor(mtcars$gear)
+mtcars$vs <- as.factor(mtcars$vs)
+mtcars$cyl <- as.factor(mtcars$cyl)
+```
+
+We will build a linear model with mpg as dependent variable and the rest as independent variables.
+
+```{r, echo=T}
+fitAll <- lm(mpg ~ ., data=mtcars)
+```
+
+The adjusted R-squared is 0.8116, and the slope of ammanual is 2.52 in this **fitAll** model, which means a car whose transmission is automatic will have a mpg of (12.30 + 2.52) on average. The p-value, howerver, is not significant, and therefore we cannot use this model as a reliable tool to predict the value of mpg based on am.
+
+We will create a new model by regressing only on cyl, disp and wt.
+
+```{r echo=T}
+fitPart <- lm(mpg ~ cyl + am + disp, data=mtcars)
+```
+
+The adjusted R-squared is 0.765. The intercept, whose value is 32.92, represents the expected mean value of mpg, and the slopes of cyl, ammanual, and disp are -1.62, 1.93, and -0.016 respectively. This means when am is manual, the mpg will correspondingly increase by 1.93. Nevertheless, only the p-value of cyl is less than 0.05, so it's not reliable to interpret mpg in this model, based on whether or not a car has automatic transmission. 
+
+```{r echo=T}
+fitCylAm <- lm(mpg ~ am + cyl, data=mtcars)
+```
+
+The adjusted R-squared is 0.74; mpg increases by 2.56 corresponding to the slope of ammanual. We're 95% confident that the intercept is between 22.09 and 27.51, and the expected mean of mpg is 24.8. However, the p-value of ammanual is 0.058457 which is bigger than 0.05. So now let's regress mpg only on am to see whether or not its p-value is significant.
+
+```{r echo=T}
+fitAm <- lm(mpg ~ am, data=mtcars)
+```
+
+We would like to plot the relationship between mpg and am grouped by cyl
+
+```{r echo=F}
+chart1 <- qplot(am, mpg, data=mtcars, col=cyl)
+chart2 <- qplot(fitCylAm$fitted.values, fitCylAm$residuals, asp=1)
+grid.arrange(chart1, chart2, nrow=1, ncol=2)
+```
+
+The p-value is 0.0003, which is very significant. However, having eliminated many independent variables, this model may have been biased, and the adjusted R-squared is only 0.3385, thus this model isn't a good choice. 
+
+The plot of Residuals vs Fitted shows that their distribution is not normal, and this suggests that the predictor vairables, which are am and cyl, are not independent.
+
+# Conclusion
+We do not favor the **fitCylAm** model over other models. The adjusted R-squared is fairly high and its p-value is very closed to 0.05 but its predictor variables are not independent. We cannot conclude that cars that have automatic transmission tend to consume more gasoline per mile than normal cars.
+
+# Appendix
+```{r}
+str(mtcars)
+anova(fitAll)
+summary(fitAll)
+
+summary(fitPart)
+summary(fitCylAm)
+confint(fitCylAm)
+summary(fitAm)
+confint(fitAm)
+```
+
